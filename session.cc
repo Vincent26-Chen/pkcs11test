@@ -256,7 +256,7 @@ TEST_F(ReadWriteSessionTest, GetSetOperationState) {
   vector<CK_ATTRIBUTE_TYPE> attrs({CKA_ENCRYPT, CKA_DECRYPT});
   SecretKey key(session_, attrs);
 
-  CK_MECHANISM mechanism = {CKM_DES_ECB, NULL_PTR, 0};
+  CK_MECHANISM mechanism = {CKM_DES3_ECB, NULL_PTR, 0};
   rv = g_fns->C_EncryptInit(session_, &mechanism, key.handle());
   ASSERT_CKR_OK(rv);
 

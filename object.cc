@@ -423,8 +423,8 @@ TEST_F(DataObjectTest, FindObject) {
 TEST_F(ReadWriteSessionTest, FindObjectSubset) {
   // Create a selection of objects.
   vector<CK_ATTRIBUTE_TYPE> attrs = {CKA_ENCRYPT, CKA_DECRYPT};
-  SecretKey des_key1(session_, attrs, CKM_DES_KEY_GEN, -1);
-  SecretKey des_key2(session_, attrs, CKM_DES_KEY_GEN, -1);
+  SecretKey des_key1(session_, attrs, CKM_DES3_KEY_GEN, -1);
+  SecretKey des_key2(session_, attrs, CKM_DES3_KEY_GEN, -1);
   SecretKey aes_key3(session_, attrs, CKM_AES_KEY_GEN, 16);
   vector<CK_ATTRIBUTE_TYPE> public_attrs = {CKA_ENCRYPT};
   vector<CK_ATTRIBUTE_TYPE> private_attrs = {CKA_DECRYPT};

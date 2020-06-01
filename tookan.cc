@@ -31,7 +31,7 @@ TEST_F(ReadWriteSessionTest, TookanAttackA1) {
   SecretKey k2(session_, k2_attrs);
 
   // Use k2 to wrap k1.
-  CK_MECHANISM wrap_mechanism = {CKM_DES_ECB, NULL_PTR, 0};
+  CK_MECHANISM wrap_mechanism = {CKM_DES3_ECB, NULL_PTR, 0};
   CK_BYTE data[4096];
   CK_ULONG data_len = sizeof(data);
   CK_RV rv;
