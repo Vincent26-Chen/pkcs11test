@@ -284,7 +284,12 @@ class KeyPair {
 
     CK_ATTRIBUTE public_object = {CKA_PRIVATE, (CK_VOID_PTR)&g_ck_false, sizeof(CK_BBOOL)};
     public_attrs_.push_back(public_object);
-    private_attrs_.push_back(public_object);
+    CK_ATTRIBUTE private_object = {CKA_PRIVATE, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)};
+    private_attrs_.push_back(private_object);
+    CK_ATTRIBUTE private_object1 = {CKA_EXTRACTABLE, (CK_VOID_PTR)&g_ck_false, sizeof(CK_BBOOL)};
+    private_attrs_.push_back(private_object1);
+    CK_ATTRIBUTE private_object2 = {CKA_SIGN, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)};
+    private_attrs_.push_back(private_object2);
 
     CK_MECHANISM mechanism = {CKM_RSA_PKCS_KEY_PAIR_GEN, NULL_PTR, 0};
     EXPECT_CKR_OK(g_fns->C_GenerateKeyPair(session_, &mechanism,
