@@ -98,21 +98,28 @@ TEST_F(ReadOnlySessionTest, WrapUnwrap) {
   ObjectAttributes k1_attrs = ObjectAttributes();
   CK_ATTRIBUTE insensitive_attr = {CKA_SENSITIVE, &g_ck_false, sizeof(g_ck_false)};
   k1_attrs.push_back(insensitive_attr);
-  SecretKey k1(session_, k1_attrs);
+  SecretKey k1(session_, k1_attrs, CKM_AES_KEY_GEN, 16);
 
   vector<CK_ATTRIBUTE_TYPE> k2_attrs = {CKA_WRAP, CKA_UNWRAP, CKA_DECRYPT};
-  SecretKey k2(session_, k2_attrs);
+  SecretKey k2(session_, k2_attrs, CKM_AES_KEY_GEN, 16);
 
+  CK_RV rv;
   // Use k2 to wrap k1.
-  CK_MECHANISM wrap_mechanism = {CKM_DES3_CBC, NULL_PTR, 0};
+  unsigned char rnd[16];
+  rv = g_fns->C_GenerateRandom(session_, rnd, 16);
+  EXPECT_CKR_OK(rv);
+
+  CK_MECHANISM wrap_mechanism = {CKM_AES_CBC, rnd, sizeof(rnd)};
+  CK_MECHANISM cipher_mechanism = {CKM_AES_CBC_PAD, rnd, sizeof(rnd)};
   CK_BYTE data[4096];
   CK_ULONG data_len = sizeof(data);
-  CK_RV rv = g_fns->C_WrapKey(session_, &wrap_mechanism, k2.handle(), k1.handle(), data, &data_len);
+  rv = g_fns->C_WrapKey(session_, &wrap_mechanism, k2.handle(), k1.handle(), data, &data_len);
   if (rv == CKR_FUNCTION_NOT_SUPPORTED) {
     TEST_SKIPPED("Key wrapping not supported");
     return;
   }
   EXPECT_CKR_OK(rv);
+  cout << "Wrapped key data: " << hex_data(data, data_len) << " , len:" << data_len << endl;
 
   // Use k2 to decrypt the result, giving contents of k1.
   EXPECT_CKR_OK(g_fns->C_DecryptInit(session_, &wrap_mechanism, k2.handle()));
@@ -120,6 +127,7 @@ TEST_F(ReadOnlySessionTest, WrapUnwrap) {
   CK_ULONG key_out_len = sizeof(key);
   EXPECT_CKR_OK(g_fns->C_Decrypt(session_, data, data_len, key, &key_out_len));
 
+  /* PKCS11 client does not support to get value
   CK_BYTE k1_value[2048];
   CK_ATTRIBUTE get_attr = {CKA_VALUE, k1_value, sizeof(k1_value)};
   EXPECT_CKR_OK(g_fns->C_GetAttributeValue(session_, k1.handle(), &get_attr, 1));
@@ -127,25 +135,53 @@ TEST_F(ReadOnlySessionTest, WrapUnwrap) {
 
   EXPECT_EQ(k1_len, key_out_len);
   EXPECT_EQ(hex_data(k1_value, k1_len), hex_data(key, key_out_len));
+  */
+  cout << "Decrypted key data: " << hex_data(key, key_out_len) << " , len:" << key_out_len << endl;
 
   // Unwrap to generate a key object with the same value.
   CK_OBJECT_HANDLE k3;
   CK_OBJECT_CLASS key_class = CKO_SECRET_KEY;
-  CK_KEY_TYPE key_type = CKK_DES;
+  CK_KEY_TYPE key_type = CKK_AES;
+  CK_ULONG value_len = 16;
   CK_ATTRIBUTE k3_attrs[] = {
     {CKA_LABEL, (CK_VOID_PTR)g_label, g_label_len},
     {CKA_CLASS, &key_class, sizeof(key_class)},
     {CKA_KEY_TYPE, (CK_VOID_PTR)&key_type, sizeof(key_type)},
+    {CKA_VALUE_LEN, (CK_VOID_PTR)&value_len, sizeof(value_len)},
     {CKA_ENCRYPT, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)},
     {CKA_DECRYPT, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)},
   };
-  EXPECT_CKR_OK(g_fns->C_UnwrapKey(session_, &wrap_mechanism, k2.handle(), data, data_len, k3_attrs, 5, &k3));
+  EXPECT_CKR_OK(g_fns->C_UnwrapKey(session_, &wrap_mechanism, k2.handle(), data, data_len,
+          k3_attrs, sizeof(k3_attrs)/sizeof(CK_ATTRIBUTE), &k3));
 
+  /*
   CK_BYTE k3_value[2048];
   CK_ATTRIBUTE k3_get_attr = {CKA_VALUE, k3_value, sizeof(k3_value)};
   EXPECT_CKR_OK(g_fns->C_GetAttributeValue(session_, k3, &k3_get_attr, 1));
   CK_ULONG k3_len = get_attr.ulValueLen;
   EXPECT_EQ(hex_data(k1_value, k1_len), hex_data(k3_value, k3_len));
+  */
+
+  ASSERT_CKR_OK(g_fns->C_EncryptInit(session_, &cipher_mechanism, k1.handle()));
+
+  std::string plaintext = "Hello World!";
+  CK_BYTE ciphertext[1024];
+  CK_ULONG ciphertext_len = sizeof(ciphertext);
+  ASSERT_CKR_OK(g_fns->C_Encrypt(session_,
+          (unsigned char *)plaintext.data(), plaintext.length(), ciphertext, &ciphertext_len));
+  if (g_verbose) cout << "CT: " << hex_data(ciphertext, ciphertext_len) << endl;
+
+  // Now decrypt the data.
+  ASSERT_CKR_OK(g_fns->C_DecryptInit(session_, &cipher_mechanism, k3));
+
+  CK_BYTE recovered_plaintext[1024];
+  CK_ULONG recovered_plaintext_len = sizeof(recovered_plaintext);
+  EXPECT_CKR_OK(g_fns->C_Decrypt(session_,
+                                 ciphertext, ciphertext_len,
+                                 recovered_plaintext, &recovered_plaintext_len));
+  if (g_verbose) cout << "PT: " << hex_data(recovered_plaintext, recovered_plaintext_len) << endl;
+  EXPECT_EQ(plaintext.length(), recovered_plaintext_len);
+  EXPECT_EQ(0, memcmp(plaintext.data(), recovered_plaintext, recovered_plaintext_len));
 
   g_fns->C_DestroyObject(session_, k3);
 }
