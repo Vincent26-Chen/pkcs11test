@@ -49,8 +49,8 @@ std::map<std::string, SignatureInfo> kSignatureInfo = {
 };
 
 std::map<std::string, CipherInfo> kCipherInfo = {
-  //{"DES-ECB", {CKK_DES, CKM_DES_KEY_GEN, CKM_DES_ECB, 8, false, -1}},
-  //{"DES-CBC", {CKK_DES, CKM_DES_KEY_GEN, CKM_DES_CBC, 8, true, -1}},
+  {"DES-ECB", {CKK_DES, CKM_DES_KEY_GEN, CKM_DES_ECB, 8, false, -1}},
+  {"DES-CBC", {CKK_DES, CKM_DES_KEY_GEN, CKM_DES_CBC, 8, true, -1}},
   {"3DES-ECB", {CKK_DES3, CKM_DES3_KEY_GEN, CKM_DES3_ECB, 8, false, -1}},
   {"3DES-CBC", {CKK_DES3, CKM_DES3_KEY_GEN, CKM_DES3_CBC, 8, true, -1}},
   {"IDEA-ECB", {CKK_IDEA, CKM_IDEA_KEY_GEN, CKM_IDEA_ECB, 8, false, -1}},
