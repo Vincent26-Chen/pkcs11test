@@ -175,7 +175,7 @@ TEST_P(DigestTest, DigestKey) {
   EXPECT_CKR_OK(rv);
 
   vector<CK_ATTRIBUTE_TYPE> attrs = {CKA_ENCRYPT, CKA_DECRYPT};
-  SecretKey key(session_, attrs, CKM_DES3_KEY_GEN);
+  SecretKey key(session_, attrs, CKM_DES_KEY_GEN);
 
   rv = g_fns->C_DigestKey(session_, key.handle());
   if (rv == CKR_KEY_INDIGESTIBLE) {
@@ -197,7 +197,7 @@ TEST_P(DigestTest, DigestKeyInvalid) {
   EXPECT_CKR_OK(rv);
 
   vector<CK_ATTRIBUTE_TYPE> attrs = {CKA_ENCRYPT, CKA_DECRYPT};
-  SecretKey key(session_, attrs, CKM_DES3_KEY_GEN);
+  SecretKey key(session_, attrs, CKM_DES_KEY_GEN);
 
   rv = g_fns->C_DigestKey(session_, key.handle());
   if (rv == CKR_KEY_INDIGESTIBLE) {
