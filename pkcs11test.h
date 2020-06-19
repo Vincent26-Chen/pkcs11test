@@ -148,6 +148,22 @@ class RWUserSessionTest : public ReadWriteSessionTest {
  public:
   RWUserSessionTest() { Login(CKU_USER, g_user_pin); }
   virtual ~RWUserSessionTest() { EXPECT_CKR_OK(g_fns->C_Logout(session_)); }
+  void DestroyObjects(CK_ATTRIBUTE *attrs, int Amt) {
+      CK_RV rv;
+      EXPECT_CKR_OK(g_fns->C_FindObjectsInit(session_, attrs, Amt));
+      CK_OBJECT_HANDLE object[128];
+      CK_ULONG count = 0;
+      EXPECT_CKR_OK(g_fns->C_FindObjects(session_, object, sizeof(object), &count));
+      EXPECT_CKR_OK(g_fns->C_FindObjectsFinal(session_));
+      if (count > 0) {
+          for (CK_ULONG i = 0; i < count; i++) {
+              rv = g_fns->C_DestroyObject(session_, object[i]);
+              if (rv != CKR_OK) {
+                  std::cout << "Failed to destroy " << object[i] << "Ret " << rv << std::endl;
+              }
+          }
+      }
+  }
 };
 
 class RWSOSessionTest : public ReadWriteSessionTest {

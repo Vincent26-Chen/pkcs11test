@@ -106,6 +106,51 @@ TEST_F(RWUserSessionTest, EnumerateObjects) {
   EnumerateObjects(session_);
 }
 
+TEST_F(RWUserSessionTest, ReloadUserObjects) {
+  if (!(g_token_flags & CKF_LOGIN_REQUIRED)) {
+    TEST_SKIPPED("Login required");
+    return;
+  }
+  CK_UTF8CHAR label[] = "Test pkcs11";
+  CK_ATTRIBUTE attrs[] = {
+    {CKA_LABEL, label, sizeof(label) - 1},
+  };
+  DestroyObjects(attrs, 1);
+  std::vector<CK_ATTRIBUTE_TYPE> attr_types({CKA_ENCRYPT, CKA_DECRYPT});
+  ObjectAttributes attrs_(attr_types);
+  CK_OBJECT_HANDLE key_;
+  CK_ULONG len = 16;
+  CK_ATTRIBUTE valuelen = {CKA_VALUE_LEN, &len, sizeof(CK_ULONG)};
+  attrs_.push_back(valuelen);
+  attrs_.push_back(attrs[0]);
+
+  CK_ATTRIBUTE public_object = {CKA_PRIVATE, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)};
+  attrs_.push_back(public_object);
+  CK_ATTRIBUTE token_object = {CKA_TOKEN, (CK_VOID_PTR)&g_ck_true, sizeof(CK_BBOOL)};
+  attrs_.push_back(token_object);
+  CK_MECHANISM mechanism = {CKM_AES_KEY_GEN, NULL_PTR, 0};
+  EXPECT_CKR_OK(g_fns->C_GenerateKey(session_, &mechanism,
+                                     attrs_.data(), attrs_.size(),
+                                     &key_));
+  if (g_verbose) {
+      cout << "Key generated with handle " << key_ << endl;
+  }
+  cout << "logging out" << endl;
+  EXPECT_CKR_OK(g_fns->C_Logout(session_));
+  cout << "logging int" << endl;
+  Login(CKU_USER, g_user_pin);
+
+  //find original objects
+
+  EXPECT_CKR_OK(g_fns->C_FindObjectsInit(session_, attrs, 1));
+  CK_OBJECT_HANDLE object[1];
+  CK_ULONG count = 0;
+  EXPECT_CKR_OK(g_fns->C_FindObjects(session_, object, sizeof(object), &count));
+  EXPECT_EQ(count, 1);
+  cout << "got object handle: " << object[0] << endl;
+  EXPECT_CKR_OK(g_fns->C_FindObjectsFinal(session_));
+}
+
 TEST_F(ReadOnlySessionTest, ConsistentObjects) {
   // Shouldn't matter whether we retrieve the objects one at a time or in bigger lumps.
   ObjectSet objs1 = GetObjects(session_, 1);
