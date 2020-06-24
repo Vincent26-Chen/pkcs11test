@@ -485,7 +485,7 @@ TEST_F(ReadWriteSessionTest, FindObjectSubset) {
                        keypair2.public_handle(), keypair2.private_handle()}),
             all_objects);
 
-  CK_KEY_TYPE des_type = CKK_DES;
+  CK_KEY_TYPE des_type = CKK_DES3;
   CK_ATTRIBUTE des_key_attrs[] = {
     {CKA_LABEL, (CK_VOID_PTR)g_label, g_label_len},
     {CKA_KEY_TYPE, &des_type, sizeof(des_type)},
